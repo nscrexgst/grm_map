@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>SAVE THE CHILDREN</title>
+    
+    <!-- // //cdn.leafletjs.com/ -in case the marker wont work -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" />
+
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+    <link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.0/css/font-awesome.css" rel="stylesheet">
+    <link rel="stylesheet" href="dist/leaflet.awesome-markers.css">
+    <script src="dist/leaflet.awesome-markers.js"></script>
+
+    <script src="healthCenter.js"></script>
+
+    <script src="barangay.js"></script>
+
+    <style type="text/css">
+
+	html, body {
+	  margin: 0;
+	  padding: 0;
+	  height: 100%;
+	}
+
+	#map {
+	  height: 100%;
+	}
+	.info {
+	  padding: 6px 8px;
+	  font-size: 14px;
+	  line-height: 16px;
+	  background: white;
+	  background: rgba(255,255,255,0.8);
+	  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+	  border-radius: 5px;
+	}
+
+	.info h4 {
+	  font-size: 16px;
+	  margin: 0 0 5px;
+	  color: #777;
+	}
+
+	.legend {
+	  font-size: 12px;
+	  line-height: 18px;
+	  color: #555;
+	}
+
+	.legend i {
+	  width: 18px;
+	  height: 18px;
+	  float: left;
+	  margin-right: 8px;
+	  opacity: 0.7;
+	}
+	</style>
+
+  </head>
+  <body>
+  	<div></div>
+  	<div id="map">
+
+  		<script>
+
+  		//Initialize Map
+  		var map = L.map('map').setView([14.710584,121.031025], 12);
+
+  		//change the position of zoom control
+  		var mapHalfHeight = map.getSize().y / 2,
+			container = map.zoomControl.getContainer(),
+			containerHalfHeight = parseInt(container.offsetHeight / 2),
+			containerTop = mapHalfHeight - containerHalfHeight + 'px';
+
+			container.style.position = 'absolute';
+			container.style.top = "60px";
+
+  		//SAVE LOGO
+  		L.Control.Watermark = L.Control.extend({
+		    onAdd: function(map) {
+        
+        var img = L.DomUtil.create('img');
+		    img.src = 'sci-logo1.jpg';
+		    img.style.width = '200px';
+			return img;
+		    },
+		    onRemove: function(map) {
+		        // Nothing to do here
+		    }
+		});
+
+		L.control.watermark = function(opts) {
+		    return new L.Control.Watermark(opts);
+		}
+		L.control.watermark({ position: 'topleft' }).addTo(map);
+
+  		//Map Control
+		var baseMap1 = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+			subdomains: 'abcd',
+			maxZoom: 19
+		}).addTo(map);
+
+		var baseMap2 = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+			subdomains: 'abcd',
+			maxZoom: 19
+		});
+		var baseMap3 = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+			attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+		});
+
+		//geojson initialization
+		var geojson;
+
+		//INTERACTION
+		function highlightFeature(e) {
+		    var layer = e.target;
+		    layer.setStyle({
+		        weight: 3,
+		        color: '#FF8',
+		        opacity: 1,
+		        dashArray: '',
+		        fillOpacity: 1
+		    });
+		    layer.bringToFront()
+		    info.update(layer.feature.properties);
+		}
+
+		function resetHighlight(e) {
+		    geojson.resetStyle(e.target)
+		    info.update();
+		}
+
+		function zoomToFeature(e) {
+		    map.fitBounds(e.target.getBounds());
+		}
+
+		function onEachFeature(feature, layer) {
+		    layer.on({
+		        mouseover: highlightFeature,
+		        mouseout: resetHighlight,
+		        click: zoomToFeature
+		    })
+		}
+
+		function onClick(e){
+			var layer = e.target;
+			layer.bindpopup(getLabel(feature.properties.name)).openPopup();
+		}
+
+		function getLabel(props){
+			return 
+
+		}
+        //Hospital Icon
+
+		//Health Centers - directed to HealthCenter.js
+		var healthCenter = L.geoJson(healthCenterData, {
+    			pointToLayer: function (feature, latlng) {
+        var marker = L.marker([latlng.lat, latlng.lng],{icon: L.AwesomeMarkers.icon({icon: 'medkit', prefix: 'fa', markerColor: 'darkblue'}) });
+
+        var content = '<table>';
+        var keys = Object.keys(feature.properties);
+	        for (var i = 0; i < keys.length; i++) {
+	            content += '<tr><td>' + keys[i] + '</td>' +
+	                       '<td>' + feature.properties[keys[i]] + '</td></tr>';
+	        }
+	        content += '</table>';
+
+	        marker.bindPopup(content);
+	        //cluster.addLayer(marker);
+	        return marker;
+			    }
+			}).addTo(map);
+
+		//old colors '#800026' '#FED976'
+		function getColor(x){
+			if(x > 0){return 'red'}
+			else {return 'gray'	}}
+
+		function style(feature) {
+	    	return {
+	        fillColor: getColor(feature.properties.IS_SAVE),
+	        weight: 2,
+	        opacity: 0.5,
+	        color: 'white',
+	        fillOpacity: 0.7
+		    };
+		}
+
+		function style2(feature) {
+	    	return {
+	        fillColor: 'transparent',
+	        weight: 2,
+	        opacity: 0.5,
+	        color: 'black',
+	        fillOpacity:1
+		    };
+		}
+
+		// Adding Barangay Layer to the map
+		var geojson = L.geoJson(barangayData, {
+		    style: style,
+		    onEachFeature: onEachFeature
+		}).addTo(map);
+
+		var baseMaps = {
+		    'Dark Canvas': baseMap1,
+		  	'Carto DB': baseMap2,
+		    'Imagery': baseMap3
+		};
+
+		var overlayMaps = {
+		    'Health Centers': healthCenter,
+		   'Barangay' : geojson
+		};
+
+
+		//INFO
+		var info = L.control();
+
+		info.onAdd = function (map) {
+		    this._div = L.DomUtil.create('div', 'info');
+		    this.update();
+		    return this._div;
+		};
+
+		info.update = function (props) {
+		    this._div.innerHTML = '<h4>CALOOCAN CITY</h4>' +
+		    (
+		        props
+		        ? '<b>' + props.BARANGAY + '</b> – ' + props.BARANGAY
+		        : '<i>Hover over a barangay</i>'
+		    );
+		};
+
+		info.addTo(map);
+
+		L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+		</script>
+  </body>
+</html>
